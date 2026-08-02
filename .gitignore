@@ -1,0 +1,24 @@
+# Build artifacts (app bundle, DMG, iconset)
+build/
+
+# macOS noise
+.DS_Store
+
+# Accidental CLI output — converting a fixture without -o writes the PDF
+# next to it, inside the repo
+tests/fixtures/*.pdf
+docs/*.pdf
+
+# Xcode, if anyone opens the sources there
+xcuserdata/
+DerivedData/
+*.xcodeproj
+
+# Swift Package Manager, if the project ever adopts it
+.build/
+.swiftpm/
+
+# Editor/tool local state
+.idea/
+.vscode/
+.claude/

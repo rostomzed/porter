@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>CFBundleName</key>
+    <string>Porter</string>
+    <key>CFBundleDisplayName</key>
+    <string>Porter</string>
+    <key>CFBundleExecutable</key>
+    <string>Porter</string>
+    <key>CFBundleIdentifier</key>
+    <string>dev.rostom.porter</string>
+    <key>CFBundleVersion</key>
+    <string>1.0.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0.0</string>
+    <key>CFBundlePackageType</key>
+    <string>APPL</string>
+    <key>CFBundleIconFile</key>
+    <string>AppIcon</string>
+    <key>CFBundleInfoDictionaryVersion</key>
+    <string>6.0</string>
+    <key>LSMinimumSystemVersion</key>
+    <string>13.0</string>
+    <key>NSPrincipalClass</key>
+    <string>NSApplication</string>
+    <key>NSHighResolutionCapable</key>
+    <true/>
+    <key>NSHumanReadableCopyright</key>
+    <string>© 2026 Rostom Zouaghi. MIT License.</string>
+    <key>NSAppleEventsUsageDescription</key>
+    <string>Porter controls Microsoft Office and iWork apps to convert your documents to PDF with full fidelity.</string>
+    <key>CFBundleDocumentTypes</key>
+    <array>
+        <dict>
+            <key>CFBundleTypeName</key>
+            <string>Convertible Document</string>
+            <key>CFBundleTypeRole</key>
+            <string>Viewer</string>
+            <key>LSHandlerRank</key>
+            <string>Alternate</string>
+            <key>CFBundleTypeExtensions</key>
+            <array>
+                <string>doc</string>
+                <string>docx</string>
+                <string>docm</string>
+                <string>dot</string>
+                <string>dotx</string>
+                <string>rtf</string>
+                <string>rtfd</string>
+                <string>odt</string>
+                <string>xls</string>
+                <string>xlsx</string>
+                <string>xlsm</string>
+                <string>ods</string>
+                <string>csv</string>
+                <string>ppt</string>
+                <string>pptx</string>
+                <string>pptm</string>
+                <string>odp</string>
+                <string>pages</string>
+                <string>numbers</string>
+                <string>key</string>
+                <string>png</string>
+                <string>jpg</string>
+                <string>jpeg</string>
+                <string>heic</string>
+                <string>heif</string>
+                <string>tiff</string>
+                <string>tif</string>
+                <string>gif</string>
+                <string>bmp</string>
+                <string>webp</string>
+                <string>jp2</string>
+                <string>txt</string>
+                <string>text</string>
+                <string>log</string>
+                <string>md</string>
+                <string>markdown</string>
+                <string>html</string>
+                <string>htm</string>
+                <string>xhtml</string>
+            </array>
+        </dict>
+    </array>
+</dict>
+</plist>
