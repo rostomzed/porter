@@ -19,55 +19,101 @@ enum OfficeConverter {
         NSWorkspace.shared.urlForApplication(withBundleIdentifier: app.rawValue) != nil
     }
 
+    // MARK: - Staging
+
+    /// Solves two sandbox problems that break scripted conversions:
+    ///
+    /// 1. Files downloaded from the internet carry com.apple.quarantine, so
+    ///    Word/Excel/PowerPoint open them in Protected View — a banner that
+    ///    waits for a human click — and the conversion hangs forever.
+    ///    Fix: convert from a temp copy with the quarantine flag removed.
+    ///
+    /// 2. The Office and iWork apps are sandboxed and can't write everywhere
+    ///    the user can (saving to /tmp, for example, fails with a misleading
+    ///    "doesn’t understand the save as message" error). Fix: the engine
+    ///    saves into a Porter-owned staging folder in the user's home area,
+    ///    and Porter — which isn't sandboxed — moves the PDF to its real
+    ///    destination.
+    private static func withStagedIO(input: URL, output: URL,
+                                     _ convert: (_ stagedInput: URL, _ stagedOutput: URL) throws -> Void) throws {
+        let fm = FileManager.default
+        let workDir = fm.homeDirectoryForCurrentUser
+            .appendingPathComponent("Library/Caches/Porter/\(UUID().uuidString)", isDirectory: true)
+        try fm.createDirectory(at: workDir, withIntermediateDirectories: true)
+        defer { try? fm.removeItem(at: workDir) }
+
+        var stagedInput = input
+        let isQuarantined = getxattr(input.path, "com.apple.quarantine", nil, 0, 0, 0) >= 0
+        if isQuarantined {
+            stagedInput = workDir.appendingPathComponent(input.lastPathComponent)
+            try fm.copyItem(at: input, to: stagedInput)
+            removexattr(stagedInput.path, "com.apple.quarantine", 0)
+        }
+
+        let stagedOutput = workDir.appendingPathComponent(output.lastPathComponent)
+        try convert(stagedInput, stagedOutput)
+
+        guard fm.fileExists(atPath: stagedOutput.path) else {
+            throw ConversionError.outputMissing
+        }
+        try fm.moveItem(at: stagedOutput, to: output)
+    }
+
     // MARK: - Microsoft Word
 
     static func convertWithWord(input: URL, output: URL) throws {
-        let script = """
-        with timeout of 600 seconds
-            tell application id "com.microsoft.Word"
-                launch
-                open (POSIX file \(quoted(input.path)))
-                set theDoc to active document
-                save as theDoc file name \(quoted(output.path)) file format format PDF
-                close theDoc saving no
-            end tell
-        end timeout
-        """
-        try runAppleScript(script, engine: "Microsoft Word")
+        try withStagedIO(input: input, output: output) { input, output in
+            let script = """
+            with timeout of 600 seconds
+                tell application id "com.microsoft.Word"
+                    launch
+                    open (POSIX file \(quoted(input.path)))
+                    set theDoc to active document
+                    save as theDoc file name \(quoted(output.path)) file format format PDF
+                    close theDoc saving no
+                end tell
+            end timeout
+            """
+            try runAppleScript(script, engine: "Microsoft Word")
+        }
     }
 
     // MARK: - Microsoft Excel
 
     static func convertWithExcel(input: URL, output: URL) throws {
-        let script = """
-        with timeout of 600 seconds
-            tell application id "com.microsoft.Excel"
-                launch
-                open (POSIX file \(quoted(input.path)))
-                set theBook to active workbook
-                save workbook as theBook filename \(quoted(output.path)) file format PDF file format
-                close theBook saving no
-            end tell
-        end timeout
-        """
-        try runAppleScript(script, engine: "Microsoft Excel")
+        try withStagedIO(input: input, output: output) { input, output in
+            let script = """
+            with timeout of 600 seconds
+                tell application id "com.microsoft.Excel"
+                    launch
+                    open (POSIX file \(quoted(input.path)))
+                    set theBook to active workbook
+                    save workbook as theBook filename \(quoted(output.path)) file format PDF file format
+                    close theBook saving no
+                end tell
+            end timeout
+            """
+            try runAppleScript(script, engine: "Microsoft Excel")
+        }
     }
 
     // MARK: - Microsoft PowerPoint
 
     static func convertWithPowerPoint(input: URL, output: URL) throws {
-        let script = """
-        with timeout of 600 seconds
-            tell application id "com.microsoft.Powerpoint"
-                launch
-                open (POSIX file \(quoted(input.path)))
-                set thePres to active presentation
-                save thePres in (POSIX file \(quoted(output.path))) as save as PDF
-                close thePres saving no
-            end tell
-        end timeout
-        """
-        try runAppleScript(script, engine: "Microsoft PowerPoint")
+        try withStagedIO(input: input, output: output) { input, output in
+            let script = """
+            with timeout of 600 seconds
+                tell application id "com.microsoft.Powerpoint"
+                    launch
+                    open (POSIX file \(quoted(input.path)))
+                    set thePres to active presentation
+                    save thePres in (POSIX file \(quoted(output.path))) as save as PDF
+                    close thePres saving no
+                end tell
+            end timeout
+            """
+            try runAppleScript(script, engine: "Microsoft PowerPoint")
+        }
     }
 
     // MARK: - iWork (Pages / Numbers / Keynote)
@@ -77,17 +123,19 @@ enum OfficeConverter {
             throw ConversionError.engineUnavailable(
                 "This file type requires \(displayName(app)) to be installed")
         }
-        let script = """
-        with timeout of 600 seconds
-            tell application id \(quoted(app.rawValue))
-                launch
-                set theDoc to open (POSIX file \(quoted(input.path)))
-                export theDoc to (POSIX file \(quoted(output.path))) as PDF
-                close theDoc saving no
-            end tell
-        end timeout
-        """
-        try runAppleScript(script, engine: displayName(app))
+        try withStagedIO(input: input, output: output) { input, output in
+            let script = """
+            with timeout of 600 seconds
+                tell application id \(quoted(app.rawValue))
+                    launch
+                    set theDoc to open (POSIX file \(quoted(input.path)))
+                    export theDoc to (POSIX file \(quoted(output.path))) as PDF
+                    close theDoc saving no
+                end tell
+            end timeout
+            """
+            try runAppleScript(script, engine: displayName(app))
+        }
     }
 
     // MARK: - Plumbing
