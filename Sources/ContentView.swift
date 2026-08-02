@@ -5,11 +5,16 @@ import UniformTypeIdentifiers
 struct ContentView: View {
     @EnvironmentObject var manager: ConversionManager
     @EnvironmentObject var settings: AppSettings
+    @ObservedObject var updates = UpdateChecker.shared
     @State private var isDropTargeted = false
     @State private var showSettings = false
 
     var body: some View {
         VStack(spacing: 0) {
+            if let update = updates.available {
+                updateBanner(update)
+            }
+
             dropZone
                 .padding([.horizontal, .top], 16)
                 .padding(.bottom, 10)
@@ -27,6 +32,35 @@ struct ContentView: View {
             SettingsView()
                 .environmentObject(settings)
         }
+    }
+
+    // MARK: - Update banner
+
+    private func updateBanner(_ update: UpdateChecker.Update) -> some View {
+        HStack(spacing: 8) {
+            Image(systemName: "arrow.down.circle.fill")
+                .foregroundStyle(Color.accentColor)
+            Text("Porter \(update.version) is available")
+                .font(.callout.weight(.medium))
+            Spacer()
+            if updates.isDownloading {
+                ProgressView().controlSize(.small)
+            } else {
+                Button("Download") { updates.downloadAndOpen() }
+                    .controlSize(.small)
+            }
+            Button {
+                updates.available = nil
+            } label: {
+                Image(systemName: "xmark")
+            }
+            .buttonStyle(.plain)
+            .foregroundStyle(.secondary)
+            .help("Dismiss")
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 8)
+        .background(Color.accentColor.opacity(0.1))
     }
 
     // MARK: - Drop zone
@@ -287,6 +321,10 @@ struct SettingsView: View {
                     QuickActionInstaller.installIfNeeded()
                 }
                 .help("Reinstalls the Finder Quick Action if it went missing")
+                Button("Check for Updates") {
+                    UpdateChecker.shared.checkSoon(force: true)
+                }
+                .help("Looks for a newer release on GitHub")
                 Spacer()
                 Button("Done") { dismiss() }
                     .keyboardShortcut(.defaultAction)
