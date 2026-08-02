@@ -31,6 +31,9 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
         // Start the drop-folder watcher if enabled.
         FolderWatcher.shared.syncWithSettings()
+
+        // Once a day, see if a newer release exists on GitHub.
+        UpdateChecker.shared.checkSoon()
     }
 
     // Files opened via Finder ("Open With"), dock-icon drops, the Quick

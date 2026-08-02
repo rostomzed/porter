@@ -31,6 +31,18 @@ enum CLI {
                 exit(0)
             case "-q", "--quiet":
                 quiet = true
+            case "--check-update":
+                let semaphore = DispatchSemaphore(value: 0)
+                var result: UpdateChecker.Update?
+                Task { result = await UpdateChecker.fetchLatest(); semaphore.signal() }
+                semaphore.wait()
+                if let update = result {
+                    print("update available: \(update.version) (current \(UpdateChecker.currentVersion))")
+                    print(update.releaseURL.absoluteString)
+                } else {
+                    print("porter \(UpdateChecker.currentVersion) is up to date")
+                }
+                exit(0)
             case "-o", "--output":
                 guard let path = iterator.next() else {
                     fail("missing directory after \(arg)")
@@ -101,6 +113,7 @@ enum CLI {
         Options:
           -o, --output <dir>   Write PDFs into <dir> (default: next to each file)
           -q, --quiet          Only report errors
+          --check-update       Check GitHub for a newer release
           -V, --version        Print version
           -h, --help           Show this help
 
