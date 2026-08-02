@@ -73,6 +73,18 @@ if ! $NATIVE_ONLY; then
         check "doc  (legacy, via Word) → pdf" "$OUT/word97.pdf"
         check "docx (via Word)         → pdf" "$OUT/modern.pdf"
         check "odt  (via Word)         → pdf" "$OUT/open.pdf"
+
+        # Quarantined (downloaded) files trigger Word's Protected View, which
+        # hangs scripted conversions unless Porter stages a clean copy.
+        textutil -convert docx "$TMP/text.txt" -output "$TMP/downloaded.docx" 2>/dev/null
+        xattr -w com.apple.quarantine "0081;00000000;Safari;" "$TMP/downloaded.docx"
+        "$BIN" -q -o "$OUT" "$TMP/downloaded.docx" 2>/dev/null
+        check "docx (quarantined)      → pdf" "$OUT/downloaded.pdf"
+
+        # Sandboxed engines can't write to /tmp directly — Porter must stage
+        # the output and move it itself.
+        "$BIN" -q -o "$TMP/sandbox-out" "$TMP/modern.docx" 2>/dev/null
+        check "output lands in /tmp dir     " "$TMP/sandbox-out/modern.pdf"
     else
         skip "doc/docx/odt" "Microsoft Word"
     fi
